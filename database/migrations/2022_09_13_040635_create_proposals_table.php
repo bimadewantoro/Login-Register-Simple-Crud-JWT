@@ -16,15 +16,9 @@ class CreateProposalsTable extends Migration
         Schema::create('proposals', function (Blueprint $table) {
             $table->id();
             $table->foreignId("user_id")->constrained("users")->onUpdate("cascade")->onDelete("cascade");
-            $table->string("ink_judul");
-            $table->text("ink_abstrak");
-            $table->text("ink_latarbelakang");
-            $table->text("ink_tujuan");
-            $table->text("ink_manfaat");
-            $table->text("ink_metode");
-            $table->text("ink_keunggulan");
-            $table->text("ink_penerapan");
-            $table->text("ink_prospek");
+            $table->string("judul");
+            $table->text("deskripsi");
+            $table->string("kategori");
             $table->timestamps();
         });
     }

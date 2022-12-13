@@ -2,6 +2,8 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ProposalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,35 +16,23 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-//     return $request->user();
-// });
 
-Route::group([
-
-    'middleware' => 'api',
-    'prefix' => 'auth'
-
-], function ($router) {
-    Route::post('/login', 'App\Http\Controllers\AuthController@login');
-    Route::post('/register', 'App\Http\Controllers\AuthController@register');
-    Route::post('/logout', 'App\Http\Controllers\AuthController@logout');
-    Route::post('/refresh', 'App\Http\Controllers\AuthController@refresh');
-    Route::post('/me', 'App\Http\Controllers\AuthController@me');
+Route::group(['prefix' => 'user'], function () {
+    Route::post('register', [UserController::class, 'store']);
+    Route::post('login', [UserController::class, 'login']);
 });
 
-Route::apiResource('proposals', App\Http\Controllers\ProposalController::class);
+Route::group(['middleware' => 'auth:api', 'prefix' => 'user'] , function () {
+    Route::get('/', [UserController::class, 'index']);
+    Route::get('/{id}', [UserController::class, 'show']);
+    Route::put('/{id}', [UserController::class, 'update']);
+    Route::delete('/{id}', [UserController::class, 'destroy']);
+});
 
-
-// Route::group([
-
-//     'middleware' => 'api',
-//     'prefix' => 'auth'
-
-// ], function ($router) {
-//     Route::post('/registrasi_tenant', 'App\Http\Controllers\RegistrasiTenantController@registrasi_tenant');
-//     Route::post('/login_tenant', 'App\Http\Controllers\RegistrasiTenantController@login_tenant');
-//     Route::post('/logout_tenant', 'App\Http\Controllers\RegistrasiTenantController@logout_tenant');
-//     Route::post('/refresh_tenant', 'App\Http\Controllers\RegistrasiTenantController@refresh_tenant');
-//     Route::post('/me_tenant', 'App\Http\Controllers\RegistrasiTenantController@me_tenant');
-// });
+Route::group(['middleware' => 'auth:api', 'prefix' => 'proposal'] , function () {
+    Route::get('/', [ProposalController::class, 'index']);
+    Route::get('/{id}', [ProposalController::class, 'show']);
+    Route::post('/create', [ProposalController::class, 'store']);
+    Route::put('/{id}', [ProposalController::class, 'update']);
+    Route::delete('/{id}', [ProposalController::class, 'destroy']);
+});

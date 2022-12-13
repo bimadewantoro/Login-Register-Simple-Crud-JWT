@@ -3,19 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\Proposal;
+use App\Repositories\Eloquent\ProposalRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class ProposalController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * @var ProposalRepository
+     */
+    private $proposalRepository;
+
+    /**
+     * ProposalController constructor.
+     * @param ProposalRepository $proposalRepository
+     */
+    public function __construct(ProposalRepository $proposalRepository)
+    {
+        $this->proposalRepository = $proposalRepository;
+    }
+
+    /**
+     * Get all proposals
+     * @method GET
+     * @return \Illuminate\Http\JsonResponse
      */
     public function index()
     {
-        $proposals = Proposal::all();
+        $proposals = $this->proposalRepository->getAllProposals();
         return response()->json([
             'success' => true,
             'message' => 'Daftar Semua Proposal',
@@ -24,71 +39,20 @@ class ProposalController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Get proposal by id
+     * @param $id
+     * @method GET
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function create()
+    public function show($id)
     {
-        //
-    }
-
-    /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
-     */
-    public function store(Request $request)
-    {
-        $validator = Validator::make(request()->all(), [
-            'ink_judul' => 'required',
-            'ink_abstrak' => 'required',
-            'ink_latarbelakang' => 'required',
-            'ink_tujuan' => 'required',
-            'ink_manfaat' => 'required',
-            'ink_metode' => 'required',
-            'ink_keunggulan' => 'required',
-            'ink_penerapan' => 'required',
-            'ink_prospek' => 'required',
-        ]);
-
-        if ($validator->fails()) {
+        $proposal = $this->proposalRepository->getProposalById($id);
+        if (!$proposal) {
             return response()->json([
-                'status' => 'error',
-                'message' => $validator->errors()->first(),
+                'success' => false,
+                'message' => 'Proposal tidak ditemukan',
             ], 400);
         }
-
-        $proposal = Proposal::create([
-            'user_id' => auth()->user()->id,
-            'ink_judul' => $request->ink_judul,
-            'ink_abstrak' => $request->ink_abstrak,
-            'ink_latarbelakang' => $request->ink_latarbelakang,
-            'ink_tujuan' => $request->ink_tujuan,
-            'ink_manfaat' => $request->ink_manfaat,
-            'ink_metode' => $request->ink_metode,
-            'ink_keunggulan' => $request->ink_keunggulan,
-            'ink_penerapan' => $request->ink_penerapan,
-            'ink_prospek' => $request->ink_prospek,
-        ]);
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Proposal berhasil dibuat',
-            'data' => $proposal
-        ], 200);
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Models\Proposal  $proposal
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Proposal $proposal)
-    {
-        $proposal = Proposal::find($proposal->id);
         return response()->json([
             'success' => true,
             'message' => 'Detail Proposal',
@@ -97,35 +61,59 @@ class ProposalController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Models\Proposal  $proposal
-     * @return \Illuminate\Http\Response
+     * Create new proposal
+     * @param Request $request
+     * @method POST
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function edit(Proposal $proposal)
+    public function store(Request $request)
     {
-        //
+        $validator = Validator::make(request()->all(), [
+            'judul' => 'required',
+            'deskripsi' => 'required',
+            'kategori' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => $validator->errors()->first(),
+            ], 400);
+        }
+        $user_id = auth()->user()->id;
+
+        request()->merge(['user_id' => $user_id]);
+        
+        $proposal = $this->proposalRepository->createProposal(request()->all());
+        return response()->json([
+            'success' => true,
+            'message' => 'Proposal berhasil dibuat',
+            'data' => $proposal
+        ], 200);
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Models\Proposal  $proposal
-     * @return \Illuminate\Http\Response
+     * Update proposal
+     * @param Request $request
+     * @param $id
+     * @method PUT
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function update(Request $request, Proposal $proposal)
+    public function update(Request $request, $id)
     {
-       $validator = Validator::make(request()->all(), [
-            'ink_judul' => 'required',
-            'ink_abstrak' => 'required',
-            'ink_latarbelakang' => 'required',
-            'ink_tujuan' => 'required',
-            'ink_manfaat' => 'required',
-            'ink_metode' => 'required',
-            'ink_keunggulan' => 'required',
-            'ink_penerapan' => 'required',
-            'ink_prospek' => 'required',
+        $proposal = $this->proposalRepository->getProposalById($id);
+        if (!$proposal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Proposal tidak ditemukan',
+            ], 400);
+        }
+
+        $validator = Validator::make(request()->all(), [
+            'judul' => 'required',
+            'deskripsi' => 'required',
+            'kategori' => 'required',
+            'user_id' => 'required',
         ]);
 
         if ($validator->fails()) {
@@ -135,42 +123,34 @@ class ProposalController extends Controller
             ], 400);
         }
 
-        $proposal = Proposal::find($proposal->id);
-        $proposal->update([
-            'user_id' => auth()->user()->id,
-            'ink_judul' => $request->ink_judul,
-            'ink_abstrak' => $request->ink_abstrak,
-            'ink_latarbelakang' => $request->ink_latarbelakang,
-            'ink_tujuan' => $request->ink_tujuan,
-            'ink_manfaat' => $request->ink_manfaat,
-            'ink_metode' => $request->ink_metode,
-            'ink_keunggulan' => $request->ink_keunggulan,
-            'ink_penerapan' => $request->ink_penerapan,
-            'ink_prospek' => $request->ink_prospek,
-        ]);
-
+        $proposal = $this->proposalRepository->updateProposal(request()->all(), $id);
         return response()->json([
-            'status' => 'success',
+            'success' => true,
             'message' => 'Proposal berhasil diupdate',
             'data' => $proposal
         ], 200);
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Models\Proposal  $proposal
-     * @return \Illuminate\Http\Response
+     * Delete proposal
+     * @param $id
+     * @method DELETE
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy(Proposal $proposal)
+    public function destroy($id)
     {
-        $proposal = Proposal::find($proposal->id);
-        $proposal->delete();
+        $proposal = $this->proposalRepository->getProposalById($id);
+        if (!$proposal) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Proposal tidak ditemukan',
+            ], 400);
+        }
 
+        $this->proposalRepository->deleteProposal($id);
         return response()->json([
-            'status' => 'success',
+            'success' => true,
             'message' => 'Proposal berhasil dihapus',
-            'data' => $proposal
         ], 200);
     }
 }
